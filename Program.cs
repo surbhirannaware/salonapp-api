@@ -112,6 +112,16 @@ builder.Services.AddCors(options =>
     });
 });
 
+var conn = builder.Configuration.GetConnectionString("SalonDb");
+var jwtKeyRaw = builder.Configuration["Jwt:Key"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+
+Console.WriteLine("SalonDb found: " + !string.IsNullOrWhiteSpace(conn));
+Console.WriteLine("Jwt Key found: " + !string.IsNullOrWhiteSpace(jwtKeyRaw));
+Console.WriteLine("Jwt Issuer found: " + !string.IsNullOrWhiteSpace(jwtIssuer));
+Console.WriteLine("Jwt Audience found: " + !string.IsNullOrWhiteSpace(jwtAudience));
+
 var app = builder.Build();
 
 // Auto-migrate at startup for small demo deployment
