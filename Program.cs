@@ -106,11 +106,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy
+            .WithOrigins("https://salonappfe.vercel.app")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
+
 
 var conn = builder.Configuration.GetConnectionString("SalonDb");
 var jwtKeyRaw = builder.Configuration["Jwt:Key"];
