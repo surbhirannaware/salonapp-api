@@ -17,37 +17,49 @@ public class JwtTokenService
     {
         var jwt = _config.GetSection("Jwt");
 
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(jwt["Key"])
-        );
+        var keyValue = jwt["Key"];
+        var issuer = jwt["Issuer"];
+        var audience = jwt["Audience"];
+        var expiryValue = jwt["ExpiryMinutes"];
+
+        if (string.IsNullOrWhiteSpace(keyValue))
+            throw new Exception("JWT Key is missing");
+
+        if (string.IsNullOrWhiteSpace(issuer))
+            throw new Exception("JWT Issuer is missing");
+
+        if (string.IsNullOrWhiteSpace(audience))
+            throw new Exception("JWT Audience is missing");
+
+        if (!int.TryParse(expiryValue, out int expiryMinutes))
+            throw new Exception("JWT ExpiryMinutes is missing or invalid. Value = " + expiryValue);
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyValue));
 
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-            new Claim("name", user.FullName)
+            new Claim("name", user.FullName ?? "")
         };
 
-        // ✅ Only add email if not null
-        if (!string.IsNullOrEmpty(user.Email))
+        if (!string.IsNullOrWhiteSpace(user.Email))
         {
             claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
         }
 
-        // ✅ Add roles properly
         foreach (var role in roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
         var token = new JwtSecurityToken(
-            issuer: jwt["Issuer"],
-            audience: jwt["Audience"],
+            issuer: issuer,
+            audience: audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(
-                int.Parse(jwt["ExpiryMinutes"])
-            ),
+            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
             signingCredentials: new SigningCredentials(
-                key, SecurityAlgorithms.HmacSha256
+                key,
+                SecurityAlgorithms.HmacSha256
             )
         );
 

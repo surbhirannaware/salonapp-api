@@ -101,23 +101,75 @@ public class AuthController : ControllerBase
     }
     // LOGIN
     [HttpPost("login")]
+    
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        var user = await _db.Users
-            .Include(u => u.UserRoles)
-            .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNo);
-
-        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            return Unauthorized("Invalid credentials");
-
-        var roles = user.UserRoles.Select(r => r.Role.RoleName).ToList();
-        var token = _jwt.GenerateToken(user, roles);
-
-        return Ok(new AuthResponse
+        try
         {
-            Token = token,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60)
-        });
+            Console.WriteLine("LOGIN STEP 1: request received for " + request.PhoneNo);
+
+            var user = await _db.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNo);
+
+            Console.WriteLine("LOGIN STEP 2: user found = " + (user != null));
+
+            if (user == null)
+                return Unauthorized("Invalid credentials");
+
+            var passwordOk = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+            Console.WriteLine("LOGIN STEP 3: password verified = " + passwordOk);
+
+            if (!passwordOk)
+                return Unauthorized("Invalid credentials");
+
+            var roles = user.UserRoles
+                .Where(r => r.Role != null)
+                .Select(r => r.Role.RoleName)
+                .ToList();
+
+
+            Console.WriteLine("LOGIN STEP 4: roles count = " + roles.Count);
+
+            var token = _jwt.GenerateToken(user, roles);
+
+            Console.WriteLine("LOGIN STEP 5: token generated successfully");
+
+            return Ok(new AuthResponse
+            {
+                Token = token,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(60)
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("LOGIN ERROR: " + ex);
+            return StatusCode(500, new
+            {
+                message = ex.Message,
+                inner = ex.InnerException?.Message,
+                stack = ex.StackTrace
+            });
+        }
     }
+    //public async Task<IActionResult> Login(LoginRequest request)
+    //{
+    //    var user = await _db.Users
+    //        .Include(u => u.UserRoles)
+    //        .ThenInclude(ur => ur.Role)
+    //        .FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNo);
+
+    //    if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+    //        return Unauthorized("Invalid credentials");
+
+    //    var roles = user.UserRoles.Select(r => r.Role.RoleName).ToList();
+    //    var token = _jwt.GenerateToken(user, roles);
+
+    //    return Ok(new AuthResponse
+    //    {
+    //        Token = token,
+    //        ExpiresAt = DateTime.UtcNow.AddMinutes(60)
+    //    });
+    //}
 }
