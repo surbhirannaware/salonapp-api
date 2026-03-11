@@ -115,11 +115,11 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Auto-migrate at startup for small demo deployment
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<SalonDbContext>();
-    await db.Database.MigrateAsync();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    var db = scope.ServiceProvider.GetRequiredService<SalonDbContext>();
+//    await db.Database.MigrateAsync();
+//}
 
 // Swagger in all environments for now
 app.UseSwagger();
